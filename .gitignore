@@ -1,0 +1,48 @@
+# ── Build output ─────────────────────────────────────────────────────────────
+bin/
+obj/
+out/
+publish/
+artifacts/
+
+# ── NuGet ─────────────────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# ── Visual Studio / Rider ─────────────────────────────────────────────────────
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.iml
+*.ipr
+*.iws
+
+# ── Launch settings (machine-specific) ───────────────────────────────────────
+**/Properties/launchSettings.json
+
+# ── Test results ──────────────────────────────────────────────────────────────
+TestResults/
+coverage/
+*.trx
+*.coveragexml
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+.env
+jenkins.env
+jenkins.db.env
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

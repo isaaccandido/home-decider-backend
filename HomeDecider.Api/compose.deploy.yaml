@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ${APP_CONTAINER_NAME}
+    ports:
+      - "${HOST_PORT}:8080"
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+    networks:
+      - shared-db-network
+    restart: unless-stopped
+
+networks:
+  shared-db-network:
+    external: true
+    name: shared-db-network

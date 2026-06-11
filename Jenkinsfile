@@ -118,7 +118,6 @@ EOL
 
                                 cd "${PROJECT_DIR}"
 
-                                : "${DB_HOST:?DB_HOST is required}"
                                 : "${DB_PORT:?DB_PORT is required}"
                                 : "${DB_USERNAME:?DB_USERNAME is required}"
                                 : "${DB_PASSWORD:?DB_PASSWORD is required}"
@@ -131,7 +130,7 @@ EOL
 COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
 APP_CONTAINER_NAME=${APP_CONTAINER_NAME}
 HOST_PORT=${HOST_PORT}
-DB_HOST=${DB_HOST}
+DB_HOST=${SHARED_DB_CONTAINER}
 DB_PORT=${DB_PORT}
 DB_NAME=${DB_NAME_BASE}
 DB_USERNAME=${DB_USERNAME}
@@ -150,7 +149,7 @@ EOL
                                 echo "App container name: ${APP_CONTAINER_NAME}"
                                 echo "Host port: ${HOST_PORT}"
                                 echo "Container port: ${BACKEND_CONTAINER_PORT}"
-                                echo "DB host: ${DB_HOST}"
+                                echo "DB host (container): ${SHARED_DB_CONTAINER}"
                                 echo "DB name: ${DB_NAME_BASE}"
                                 echo "Allowed origin: ${ALLOWED_ORIGIN}"
                                 echo "==========================="
@@ -181,8 +180,8 @@ EOL
 
                                 echo "===== EF CORE DATABASE UPDATE ====="
                                 dotnet tool restore
-                                EF_CONN=$(printf 'Host=%s;Port=%s;Database=%s;Username=%s;Password=%s' \
-                                    "${DB_HOST}" "${DB_PORT}" "${DB_NAME_BASE}" "${DB_USERNAME}" "${DB_PASSWORD}")
+                                EF_CONN=$(printf 'Host=localhost;Port=%s;Database=%s;Username=%s;Password=%s' \
+                                    "${DB_PORT}" "${DB_NAME_BASE}" "${DB_USERNAME}" "${DB_PASSWORD}")
                                 dotnet ef database update \
                                     --project "HomeDecider.Api.csproj" \
                                     --startup-project "HomeDecider.Api.csproj" \

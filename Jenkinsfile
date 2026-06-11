@@ -23,8 +23,7 @@ pipeline {
         DB_NAME_BASE              = 'homedecider'
 
         BACKEND_CONTAINER_PORT    = '8080'
-        BACKEND_PRODUCTION_PORT   = '8010'
-        BACKEND_DEVELOPMENT_PORT  = '8011'
+        BACKEND_HOST_PORT         = '8010'
 
         DB_COMPOSE_PROJECT        = 'home-decider-db'
     }
@@ -36,7 +35,7 @@ pipeline {
                     set +x
                     set -eu
 
-                    dotnet restore "${APP_NAME}.sln"
+                    dotnet restore "backend/HomeDecider.slnx"
                     dotnet publish "${API_PROJECT}" -c Release -o out
                 '''
             }
@@ -94,44 +93,23 @@ EOL
                     def rawGitBranch = (env.GIT_BRANCH ?: '').trim()
 
                     if (!rawGitBranch) {
-                        error("GIT_BRANCH is not available. This pipeline expects Jenkins Git plugin branch metadata, e.g. origin/main or origin/develop.")
+                        error("GIT_BRANCH is not available. This pipeline expects Jenkins Git plugin branch metadata, e.g. origin/main.")
                     }
 
                     def gitBranch = rawGitBranch
                         .replaceFirst(/^origin\//, '')
                         .replaceFirst(/^refs\/heads\//, '')
 
-                    def profileEffective
-                    def profileShort
-                    def hostPort
-
-                    switch (gitBranch) {
-                        case 'main':
-                            profileEffective = 'production'
-                            profileShort = 'prod'
-                            hostPort = env.BACKEND_PRODUCTION_PORT
-                            break
-                        case 'develop':
-                            profileEffective = 'development'
-                            profileShort = 'dev'
-                            hostPort = env.BACKEND_DEVELOPMENT_PORT
-                            break
-                        default:
-                            error("Unsupported branch '${gitBranch}' (raw: '${rawGitBranch}'). Expected 'main' or 'develop'.")
+                    if (gitBranch != 'main') {
+                        error("Unsupported branch '${gitBranch}' (raw: '${rawGitBranch}'). Only 'main' is supported.")
                     }
-
-                    def composeProject    = "home-decider-api-${profileEffective}"
-                    def appContainerName  = "home-decider-api-${profileEffective}"
-                    def podName           = composeProject
 
                     withEnv([
                         "GIT_BRANCH_EFFECTIVE=${gitBranch}",
-                        "PROFILE_EFFECTIVE=${profileEffective}",
-                        "PROFILE_SHORT=${profileShort}",
-                        "HOST_PORT=${hostPort}",
-                        "COMPOSE_PROJECT_NAME=${composeProject}",
-                        "APP_CONTAINER_NAME=${appContainerName}",
-                        "APP_POD_NAME=${podName}"
+                        "HOST_PORT=${env.BACKEND_HOST_PORT}",
+                        "COMPOSE_PROJECT_NAME=home-decider-api",
+                        "APP_CONTAINER_NAME=home-decider-api",
+                        "APP_POD_NAME=home-decider-api"
                     ]) {
                         withFolderProperties {
                             sh '''
@@ -149,20 +127,13 @@ EOL
                                 : "${DEFAULT_ADMIN_PASSWORD:?DEFAULT_ADMIN_PASSWORD is required}"
                                 : "${ALLOWED_ORIGIN:?ALLOWED_ORIGIN is required}"
 
-                                DB_NAME_COMPUTED="${DB_NAME_BASE}_${PROFILE_SHORT}"
-
-                                echo "${DB_NAME_COMPUTED}" | grep -Eq '^[A-Za-z0-9_]+$' || {
-                                    echo "Invalid computed DB_NAME: ${DB_NAME_COMPUTED}"
-                                    exit 1
-                                }
-
                                 cat > jenkins.env <<EOL
 COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
 APP_CONTAINER_NAME=${APP_CONTAINER_NAME}
 HOST_PORT=${HOST_PORT}
 DB_HOST=${DB_HOST}
 DB_PORT=${DB_PORT}
-DB_NAME=${DB_NAME_COMPUTED}
+DB_NAME=${DB_NAME_BASE}
 DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
 JWT_SECRET=${JWT_SECRET}
@@ -176,14 +147,11 @@ EOL
                                 echo "Git branch: ${GIT_BRANCH_EFFECTIVE}"
                                 echo "Compose project: ${COMPOSE_PROJECT_NAME}"
                                 echo "Container engine: ${CONTAINER_ENGINE}"
-                                echo "Effective profile: ${PROFILE_EFFECTIVE}"
-                                echo "Profile suffix: ${PROFILE_SHORT}"
                                 echo "App container name: ${APP_CONTAINER_NAME}"
                                 echo "Host port: ${HOST_PORT}"
                                 echo "Container port: ${BACKEND_CONTAINER_PORT}"
                                 echo "DB host: ${DB_HOST}"
-                                echo "DB base name: ${DB_NAME_BASE}"
-                                echo "DB final name: ${DB_NAME_COMPUTED}"
+                                echo "DB name: ${DB_NAME_BASE}"
                                 echo "Allowed origin: ${ALLOWED_ORIGIN}"
                                 echo "==========================="
 
@@ -194,10 +162,10 @@ EOL
                                     }
 
                                     docker exec -i "${SHARED_DB_CONTAINER}" \
-                                        psql -U "${DB_USERNAME}" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME_COMPUTED}'" \
+                                        psql -U "${DB_USERNAME}" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME_BASE}'" \
                                         | grep -q 1 \
                                         || docker exec -i "${SHARED_DB_CONTAINER}" \
-                                            psql -U "${DB_USERNAME}" -d postgres -c "CREATE DATABASE \\"${DB_NAME_COMPUTED}\\""
+                                            psql -U "${DB_USERNAME}" -d postgres -c "CREATE DATABASE \\"${DB_NAME_BASE}\\""
                                 else
                                     sudo podman container inspect "${SHARED_DB_CONTAINER}" >/dev/null 2>&1 || {
                                         echo "Shared DB container '${SHARED_DB_CONTAINER}' not found. Run with RUN_DB_DEPLOY checked, or deploy compose.db.yaml separately first."
@@ -205,16 +173,16 @@ EOL
                                     }
 
                                     sudo podman exec -i "${SHARED_DB_CONTAINER}" \
-                                        psql -U "${DB_USERNAME}" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME_COMPUTED}'" \
+                                        psql -U "${DB_USERNAME}" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME_BASE}'" \
                                         | grep -q 1 \
                                         || sudo podman exec -i "${SHARED_DB_CONTAINER}" \
-                                            psql -U "${DB_USERNAME}" -d postgres -c "CREATE DATABASE \\"${DB_NAME_COMPUTED}\\""
+                                            psql -U "${DB_USERNAME}" -d postgres -c "CREATE DATABASE \\"${DB_NAME_BASE}\\""
                                 fi
 
                                 echo "===== EF CORE DATABASE UPDATE ====="
                                 dotnet tool restore
                                 EF_CONN=$(printf 'Host=%s;Port=%s;Database=%s;Username=%s;Password=%s' \
-                                    "${DB_HOST}" "${DB_PORT}" "${DB_NAME_COMPUTED}" "${DB_USERNAME}" "${DB_PASSWORD}")
+                                    "${DB_HOST}" "${DB_PORT}" "${DB_NAME_BASE}" "${DB_USERNAME}" "${DB_PASSWORD}")
                                 dotnet ef database update \
                                     --project "HomeDecider.Api.csproj" \
                                     --startup-project "HomeDecider.Api.csproj" \

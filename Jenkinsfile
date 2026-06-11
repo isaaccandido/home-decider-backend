@@ -17,8 +17,8 @@ pipeline {
 
     environment {
         APP_NAME                  = 'HomeDecider'
-        PROJECT_DIR               = 'backend/HomeDecider.Api'
-        API_PROJECT               = 'backend/HomeDecider.Api/HomeDecider.Api.csproj'
+        PROJECT_DIR               = 'HomeDecider.Api'
+        API_PROJECT               = 'HomeDecider.Api/HomeDecider.Api.csproj'
         SHARED_DB_CONTAINER       = 'shared-postgres'
         DB_NAME_BASE              = 'homedecider'
 
@@ -35,7 +35,7 @@ pipeline {
                     set +x
                     set -eu
 
-                    dotnet restore "backend/HomeDecider.slnx"
+                    dotnet restore "HomeDecider.slnx"
                     dotnet publish "${API_PROJECT}" -c Release -o out
                 '''
             }

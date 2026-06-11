@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${APP_CONTAINER_NAME}-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - /opt/home-decider/db:/var/lib/postgresql/data
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: .
@@ -8,8 +26,8 @@ services:
       - "${HOST_PORT}:8080"
     environment:
       ASPNETCORE_HTTP_PORTS: "8080"
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
+      DB_HOST: postgres
+      DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -17,11 +35,13 @@ services:
       DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME}
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD}
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
-      - shared-db-network
+      - internal
     restart: unless-stopped
 
 networks:
-  shared-db-network:
-    external: true
-    name: shared-db-network
+  internal:
+    name: ${COMPOSE_PROJECT_NAME}-net

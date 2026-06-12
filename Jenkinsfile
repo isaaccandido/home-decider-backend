@@ -82,8 +82,6 @@ DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
 ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
 EOL
 
-                                sudo mkdir -p /opt/home-decider/db
-
                                 echo "===== DEPLOYMENT INFO ====="
                                 echo "App name: ${APP_NAME}"
                                 echo "Git branch: ${GIT_BRANCH_EFFECTIVE}"

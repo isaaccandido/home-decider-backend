@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - /opt/home-decider/db:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     networks:
       - internal
     restart: unless-stopped
@@ -45,3 +45,7 @@ services:
 networks:
   internal:
     name: ${COMPOSE_PROJECT_NAME}-net
+
+volumes:
+  db-data:
+    name: ${COMPOSE_PROJECT_NAME}-db-data

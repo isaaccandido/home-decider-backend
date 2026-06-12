@@ -52,9 +52,10 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+var allowedOrigin = (builder.Configuration["ALLOWED_ORIGIN"] ?? throw new InvalidOperationException("ALLOWED_ORIGIN is not set.")).Trim().TrimEnd('/');
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(builder.Configuration["ALLOWED_ORIGIN"] ?? throw new InvalidOperationException("ALLOWED_ORIGIN is not set."))
+        policy.WithOrigins(allowedOrigin)
               .AllowAnyHeader()
               .AllowAnyMethod()));
 

@@ -16,7 +16,7 @@ public static class DatabaseSeeder
 
         logger.LogInformation("Applying database migrations...");
 
-        const int maxAttempts = 10;
+        const int maxAttempts = 20;
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
             try
@@ -26,8 +26,8 @@ public static class DatabaseSeeder
             }
             catch (Exception ex) when (attempt < maxAttempts)
             {
-                logger.LogWarning(ex, "Database not ready (attempt {Attempt}/{Max}), retrying in 3s...", attempt, maxAttempts);
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                logger.LogWarning(ex, "Database not ready (attempt {Attempt}/{Max}), retrying in 5s...", attempt, maxAttempts);
+                await Task.Delay(TimeSpan.FromSeconds(5));
             }
         }
 

@@ -15,7 +15,22 @@ public static class DatabaseSeeder
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
         logger.LogInformation("Applying database migrations...");
-        await db.Database.MigrateAsync();
+
+        const int maxAttempts = 10;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                await db.Database.MigrateAsync();
+                break;
+            }
+            catch (Exception ex) when (attempt < maxAttempts)
+            {
+                logger.LogWarning(ex, "Database not ready (attempt {Attempt}/{Max}), retrying in 3s...", attempt, maxAttempts);
+                await Task.Delay(TimeSpan.FromSeconds(3));
+            }
+        }
+
         logger.LogInformation("Database ready.");
 
         if (!await db.Users.AnyAsync())

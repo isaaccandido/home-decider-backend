@@ -37,6 +37,7 @@ var jwtKey = builder.Configuration["JWT_SECRET"] ?? throw new InvalidOperationEx
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

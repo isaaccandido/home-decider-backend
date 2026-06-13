@@ -5,7 +5,8 @@ public record CreateDecisionRequest(
     string? Considerations,
     List<string> Options,
     bool AllowMultipleVotes,
-    bool IsAnonymous
+    bool IsAnonymous,
+    string? PublicPassword
 );
 
 public record CastVoteRequest(int OptionId);
@@ -23,6 +24,7 @@ public record DecisionDto(
     int? WinnerOptionId,
     bool AllowMultipleVotes,
     bool IsAnonymous,
+    string? PublicToken,
     List<OptionDto> Options,
     List<VoteDto> Votes
 );
@@ -34,3 +36,27 @@ public record DecisionSummaryDto(
     bool IsResolved,
     string? WinnerOptionText
 );
+
+// Public (unauthenticated) voting
+public record PublicDecisionInfoDto(string Title);
+
+public record PublicOptionDto(int Id, string Text);
+
+public record PublicVoteResultDto(int OptionId, int Count, List<string> VoterNames);
+
+public record PublicDecisionDto(
+    string Title,
+    string? Considerations,
+    bool AllowMultipleVotes,
+    bool IsAnonymous,
+    bool IsResolved,
+    int? WinnerOptionId,
+    string? WinnerText,
+    List<PublicOptionDto> Options,
+    List<PublicVoteResultDto> Results,
+    List<int> MyVotedOptionIds
+);
+
+public record PublicPollRequest(string VoterName, string Password);
+
+public record PublicVoteRequest(string VoterName, int OptionId, string Password);
